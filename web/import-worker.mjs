@@ -1,0 +1,3 @@
+import {unzipSync} from './vendor/fflate.mjs';
+self.onmessage=e=>{try{let total=0;let data=unzipSync(new Uint8Array(e.data),{filter:f=>{if(!/\.(osu|mp3|ogg|wav|flac|m4a|aac|jpg|jpeg|png|webp|json)$/i.test(f.name)&&!/^assets\/[a-f0-9]{64}$/i.test(f.name))return false;if(f.originalSize>180*1024*1024)throw Error('An archived file is larger than 180 MB.');total+=f.originalSize;if(total>650*1024*1024)throw Error('Expanded archive exceeds the 650 MB import limit.');return true}});let files=Object.entries(data).map(([path,bytes])=>({path,bytes}));self.postMessage({files},[...new Set(files.map(f=>f.bytes.buffer))])}catch(err){self.postMessage({error:err.message})}};
+

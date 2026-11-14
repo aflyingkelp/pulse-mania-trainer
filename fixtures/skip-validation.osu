@@ -1,0 +1,20 @@
+osu file format v14
+[General]
+AudioFilename: audio.wav
+Mode:3
+[Metadata]
+Title: Skip and skin validation
+Artist: Trainer QA
+Creator: Trainer QA
+Version: Empty intro and break
+[Difficulty]
+CircleSize:4
+OverallDifficulty:5
+[TimingPoints]
+0,500,4,2,0,100,1,0
+[HitObjects]
+64,192,12000,1,0,0:0:0:0:
+192,192,12500,128,0,14500:0:0:0:0:
+320,192,13000,1,0,0:0:0:0:
+448,192,28000,1,0,0:0:0:0:
+64,192,28500,1,0,0:0:0:0:

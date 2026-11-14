@@ -1,0 +1,22 @@
+{
+  "name": "pulse-mania-trainer",
+  "version": "5.0.0",
+  "description": "Local osu!mania browser trainer",
+  "scripts": {
+    "start": "node preview.mjs",
+    "build": "node scripts/build-server.mjs",
+    "test": "node test-core.mjs && node test-api.mjs && node test-v4.mjs && node test-v5.mjs && node test-v6.mjs && node test-v7.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "fflate": "0.8.3"
+  },
+  "private": true,
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "fake-indexeddb": "6.2.8"
+  }
+}

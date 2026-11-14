@@ -1,0 +1,8 @@
+node_modules/
+*.tar.gz
+/work/
+/probe.mjs
+/change-online.mjs
+/worker/assets.generated.mjs
+
+/dist/

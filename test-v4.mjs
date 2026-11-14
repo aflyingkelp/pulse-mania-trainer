@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';import {indexedDB} from 'fake-indexeddb';globalThis.indexedDB=indexedDB;import {lazerWindows,Session,parseOsu} from './web/core.mjs';import {getHostedAsset,cacheSummary,requestRetry} from './web/cache.mjs';import * as store from './web/storage.mjs';import {allowedUpstream} from './worker/api.mjs';let count=0;async function test(name,fn){await fn();console.log('PASS '+name);count++}
+const chart={keys:1,od:10,duration:4,timing:[],notes:[{t:2,end:3,lane:0}]},options={ruleset:'lazer',windows:lazerWindows(10).slice(0,5),missWindow:lazerWindows(10)[5]};
+await test('lazer OD 0, 5 and 10 windows follow native mania ranges and floor rounding',()=>{assert.deepEqual(lazerWindows(0),[22.5,64.5,97.5,127.5,151.5,188.5]);assert.deepEqual(lazerWindows(5),[19.5,49.5,82.5,112.5,136.5,173.5]);assert.deepEqual(lazerWindows(10),[13.5,34.5,67.5,97.5,121.5,158.5]);assert.equal(lazerWindows(5,1.5)[0],29.5/1.5)});
+await test('separate miss window consumes a miss outside Meh, not an invisible no-op',()=>{let s=new Session(chart,options),hit=s.press(0,2.15);assert.equal(hit.grade,5)});
+await test('holding past a lazer tail no longer awards a free perfect',()=>{let s=new Session(chart,options);s.press(0,2);s.tick(3);assert.equal(s.counts[0],1);assert.equal(s.notes[0].tail,false);s.tick(3.25);assert.equal(s.counts[5],1)});
+await test('release lenience is 1.5x with no hold break',()=>{let s=new Session(chart,options);s.press(0,2);let hit=s.release(0,3.019)[0];assert.equal(hit.grade,0)});
+await test('a broken hold can be regrabbed but its tail is capped to Meh',()=>{let s=new Session(chart,options);s.press(0,2);s.release(0,2.1);assert.equal(s.notes[0].broken,true);s.press(0,2.8);assert.equal(s.release(0,3)[0].grade,4)});
+await test('missed head still allows a capped tail after regrab',()=>{let s=new Session(chart,options);s.tick(2.2);s.press(0,2.8);assert.equal(s.release(0,3)[0].grade,4)});
+await test('Meh remains a combo hit in lazer mode',()=>{let s=new Session({...chart,notes:[{t:1,end:1,lane:0},{t:2,end:2,lane:0}]},options);s.press(0,1.12);s.release(0,1.12);s.press(0,2);assert.equal(s.combo,2)});
+let fetchOriginal=globalThis.fetch,bytes=new TextEncoder().encode('verified cached audio fixture'),hash=await store.fingerprint(bytes),id='/api/assets/'+hash,network=0;
+try{globalThis.fetch=async()=>{network++;return new Response(bytes,{headers:{'content-type':'audio/mpeg'}})};
+await test('downloaded media is SHA-256 verified and persisted',async()=>{let blob=await getHostedAsset(id);assert.equal(blob.size,bytes.length);assert.equal((await cacheSummary()).files,1)});
+globalThis.fetch=async()=>{network++;throw Error('offline')};
+await test('cached audio plays without any network request',async()=>{let before=network,blob=await getHostedAsset(id);assert.equal(blob.size,bytes.length);assert.equal(network,before)});
+await test('corrupt cached media is discarded and cannot be played silently',async()=>{await store.put('remote-cache',{id,blob:new Blob(['tampered']),used:0});globalThis.fetch=async()=>new Response(bytes);let blob=await getHostedAsset(id);assert.equal(await blob.text(),'verified cached audio fixture')});
+await test('a mismatched download hash is rejected',async()=>{globalThis.fetch=async()=>new Response('invalid');await assert.rejects(()=>getHostedAsset('/api/assets/'+'a'.repeat(64)),/integrity/)});
+await test('expired access is not retried or bypassed',async()=>{let calls=0;globalThis.fetch=async()=>{calls++;return new Response('denied',{status:403})};await assert.rejects(()=>requestRetry('/api/health'),/Access denied/);assert.equal(calls,1)});
+await test('clients cannot turn retries into an arbitrary URL proxy',async()=>{await assert.rejects(()=>requestRetry('https://other.test/path'),/Only this trainer/)});
+}finally{globalThis.fetch=fetchOriginal}
+await test('upstream redirects allow only HTTPS approved provider hosts',()=>{assert.equal(allowedUpstream('https://storage.osu.direct/osz/1?signature=x'),true);for(let u of['http://catboy.best/d/1','https://127.0.0.1/a','https://evil.test','https://user:pass@catboy.best/a','https://catboy.best:444/a'])assert.equal(allowedUpstream(u),false)});
+console.log(count+' receptor/timing/cache/security regression tests passed.');
