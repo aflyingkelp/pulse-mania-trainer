@@ -6,6 +6,8 @@ Play at https://aflyingkelp.github.io/pulse-mania-trainer/.
 
 ## Hosting
 
+The Dan packs section contains all 26 archives indexed from danreform.com's all-in-one collection, including Jack, Speed, Stamina and Tech v1/v2, main courses, samples, pre-v1 and extras. Pack imports stream only the selected ZIP byte range, inflate nested OSZ files, verify the published ZIP CRC, and store media and individual charts in R2. Chart summaries are browsable without downloading every chart into browser memory. The published archive index and source checksum are in `worker/dan-catalog.mjs`; browser scores are trainer practice results, not certified Dan clears.
+
 GitHub Actions tests and publishes the frontend to GitHub Pages on pushes to main. Run `npm run build:pages` to generate the static `pages/` artifact. Project-relative workers and service-worker caches support the `/pulse-mania-trainer/` path.
 
 Map search, no-video downloads, installed maps, cover images and audio use the public backend at https://pulse-mania-4k-arcade.a-flying-kelp.chatgpt.site. The backend allows browser API requests from https://aflyingkelp.github.io. The Pages frontend sends no credentials to it. No API keys or GitHub secrets are required by the frontend workflow. Local chart/skin imports, scores, settings and cached audio remain in browser storage for each origin.

@@ -1,3 +1,4 @@
+import {mountDans} from './dans.mjs';
 import {clampScroll,scrollTime,fieldWidth,migratePlayfield} from './playfield.mjs';
 import {loadSkin,importSkin} from './skins.mjs';
 import {installSkinUI} from './skins-ui.mjs';
@@ -21,7 +22,7 @@ function windows(){return timingProfile(selected,config.rate).windows}
 function keysFor(n){return settings.bindings[n]||DEFAULT_KEYS[n]}
 function rememberSettings(){return store.put('settings',settings).catch(e=>toast('Could not save preferences: '+e.message))}
 function rememberConfig(){if(!selected)return;chartPrefs[selected.id]={...config};store.put('settings',{id:'chart-prefs',value:chartPrefs}).catch(e=>toast(e.message))}
-function go(page){if(playing)return;runToken++;if(page!=='online')online.stopPreview();lastView=page;document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===page));document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.page===page));if(page==='history')renderHistory();if(page==='settings')renderSettings();if(page==='online')online.ensureLoaded()}
+function go(page){if(playing)return;runToken++;if(page!=='online')online.stopPreview();lastView=page;document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===page));document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.page===page));if(page==='history')renderHistory();if(page==='settings')renderSettings();if(page==='online')online.ensureLoaded();if(page==='dans')dans.ensureLoaded()}
 function statsHTML(items){return items.map(([l,v])=>`<div class="stat-tile"><span>${esc(l)}</span><b>${esc(v)}</b></div>`).join('')}
 async function assetURL(id){if(!id)return null;if(id.startsWith('/api/assets/')){if(urls.has(id))return urls.get(id);try{let blob=await getHostedAsset(id,{cache:settings.cacheMaps,limitMB:settings.cacheLimit}),u=URL.createObjectURL(blob);urls.set(id,u);return u}catch{return null}}if(urls.has(id))return urls.get(id);let asset=await store.get('assets',id);if(!asset)return null;let u=URL.createObjectURL(asset.blob);urls.set(id,u);return u}
 function addCollectionBar(){let bar=document.querySelector('.collection-filter');if(!bar){bar=document.createElement('div');bar.className='collection-filter';document.querySelector('.toolbar').before(bar)}let names=['all','favorites',...collectionNames];bar.innerHTML=names.map(n=>`<button data-collection="${esc(n)}" class="${collection===n?'on':''}">${n==='all'?'All charts':n==='favorites'?'★ Favorites':esc(n)}</button>`).join('');bar.querySelectorAll('button').forEach(b=>b.onclick=()=>{collection=b.dataset.collection;renderLibrary()})}
@@ -97,6 +98,7 @@ async function ingestHosted(data,preferred,play=false){let chosenId=null,hidden=
 async function syncHosted(){let response=await requestRetry('/api/library',{attempts:2,timeout:10000});if(!response.ok)return;let library=await response.json(),hidden=(await store.get('settings','hosted-hidden'))?.value||[],loaded=0;for(let set of library.sets){let missing=set.charts.some(c=>!hidden.includes(c.id)&&!charts.some(local=>local.id===c.id));if(!missing)continue;let r=await requestRetry('/api/maps/'+set.id+'/installed',{attempts:2,timeout:10000});if(!r.ok)continue;let data=await r.json();for(let c of data.charts){if(hidden.includes(c.id)||charts.some(local=>local.id===c.id))continue;await store.put('charts',c);charts.push(c);loaded++}}if(loaded){renderLibrary();if(!selected&&charts.length)selectChart(charts[0].id)}online.refresh()}
 const settingsUI=installSettingsUI({get:()=>settings,chart:()=>selected,keys:keysFor,toast,apply:async values=>{Object.assign(settings,values);await rememberSettings();renderSettings()}});
 const skinUI=installSkinUI({get:()=>settings,toast,notice,apply:async values=>{Object.assign(settings,values);await rememberSettings();renderSettings()}});
+const dans=mountDans({toast,onChart:async(chart,play)=>{await ingestHosted({charts:[chart],provider:'Dan Reform'},{id:chart.beatmapId,version:chart.version,keys:chart.keys},play)}});
 const online=mountOnline({toast,getInstalled:()=>[...new Set(charts.filter(c=>c.hosted).map(c=>c.mapsetId))],getVolume:()=>settings.volume,onInstalled:ingestHosted});
 
 window.addEventListener('unhandledrejection',e=>{console.error(e.reason);toast('Operation failed: '+(e.reason?.message||e.reason),7000)});init();
