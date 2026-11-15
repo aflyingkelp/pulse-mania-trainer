@@ -2,6 +2,14 @@
 
 Browser rhythm trainer with a server-backed osu! beatmap catalog, durable R2 map storage, and Canvas/Web Audio gameplay.
 
+Play at https://aflyingkelp.github.io/pulse-mania-trainer/.
+
+## Hosting
+
+GitHub Actions tests and publishes the frontend to GitHub Pages on pushes to main. Run `npm run build:pages` to generate the static `pages/` artifact. Project-relative workers and service-worker caches support the `/pulse-mania-trainer/` path.
+
+Map search, no-video downloads, installed maps, cover images and audio use the public backend at https://pulse-mania-4k-arcade.a-flying-kelp.chatgpt.site. The backend allows browser API requests from https://aflyingkelp.github.io. The Pages frontend sends no credentials to it. No API keys or GitHub secrets are required by the frontend workflow. Local chart/skin imports, scores, settings and cached audio remain in browser storage for each origin.
+
 ## Run
 
 Requires Node.js 20+. From this directory:

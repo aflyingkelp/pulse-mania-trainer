@@ -5,4 +5,6 @@ node_modules/
 /change-online.mjs
 /worker/assets.generated.mjs
 
+/pages/
+
 /dist/

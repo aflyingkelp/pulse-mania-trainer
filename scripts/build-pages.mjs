@@ -1,0 +1,15 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {createHash} from 'node:crypto';
+import {build} from 'esbuild';
+const output='pages',backend='https://pulse-mania-4k-arcade.a-flying-kelp.chatgpt.site';
+fs.mkdirSync(output,{recursive:true});fs.cpSync('web',output,{recursive:true});
+let client=await build({entryPoints:['web/app.mjs'],bundle:true,format:'esm',platform:'browser',target:'es2022',minify:true,write:false});
+let code=client.outputFiles[0].text,js='runtime/pulse-'+createHash('sha256').update(code).digest('hex').slice(0,12)+'.mjs';
+let css=fs.readFileSync('web/style.css','utf8'),style='runtime/style-'+createHash('sha256').update(css).digest('hex').slice(0,12)+'.css';
+fs.mkdirSync(path.join(output,'runtime'),{recursive:true});fs.writeFileSync(path.join(output,js),code);fs.writeFileSync(path.join(output,style),css);
+let html=fs.readFileSync('web/index.html','utf8').replace('<head>','<head><meta name="pulse-api-origin" content="'+backend+'">').replace('src="app.mjs"','src="'+js+'"').replace('href="style.css"','href="'+style+'"');
+fs.writeFileSync(path.join(output,'index.html'),html);fs.writeFileSync(path.join(output,'.nojekyll'),'');
+let sw=fs.readFileSync('web/sw.js','utf8').replace(/FILES=\[([^\]]*)\]/,(_,list)=>'FILES=['+list+','+JSON.stringify('/'+js)+','+JSON.stringify('/'+style)+']');
+sw=sw.replace('pulse-shell-v5','pulse-shell-v5-pages-'+createHash('sha256').update(html+code+css+sw).digest('hex').slice(0,12));fs.writeFileSync(path.join(output,'sw.js'),sw);
+console.log('Built GitHub Pages app with backend '+backend);
