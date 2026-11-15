@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {clampScroll,scrollTime,scrollPixels,fieldWidth,migratePlayfield} from './web/playfield.mjs';
+assert.equal(scrollTime(1),11485);assert.equal(scrollTime(20),574.25);assert.equal(scrollTime(40),287.125);assert.equal(clampScroll(100),40);assert.equal(clampScroll(-1),1);
+console.log('PASS scroll speed uses lazer’s 1–40 range and 11485 / speed time formula');
+assert.equal(scrollPixels(20,1440),scrollPixels(20,720)*2);assert.ok(Math.abs(scrollPixels(20,720)*(scrollTime(20)/1000)-720*402/480)<1e-6);
+console.log('PASS scrolling keeps the same travel time at different playfield heights');
+let old=migratePlayfield({version:5,scroll:650,laneWidth:65});assert.equal(old.laneWidth,128);assert.equal(old.scrollSpeed,12.4);assert.equal(old.version,6);assert.deepEqual(migratePlayfield({...old}),old);
+console.log('PASS existing narrow fields widen and pixel speeds migrate once');
+let custom=migratePlayfield({version:6,laneWidth:155,scrollSpeed:28});assert.equal(custom.laneWidth,155);assert.equal(custom.scrollSpeed,28);
+assert.equal(fieldWidth(4,128,0,900),512);assert.equal(fieldWidth(7,128,0,620),620);assert.equal(fieldWidth(4,128,900,720),720);assert.equal(fieldWidth(4,128,0,250),250);
+console.log('PASS wider lanes preserve custom settings and fit small screens and imported skins');

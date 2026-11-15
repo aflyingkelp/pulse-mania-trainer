@@ -12,6 +12,8 @@ Map search, no-video downloads, installed maps, cover images and audio use the p
 
 ## Run
 
+Playfield columns default to 128 px (512 px for 4K), automatically fit the available screen, and can be resized in the pause menu. Scroll speed uses osu!lazer's 1–40 scale (`11485 / speed` milliseconds). Change it in Settings, in the gameplay toolbar, or with F3/F4 and Ctrl/Shift + plus/minus. Old pixel-speed preferences migrate once.
+
 Requires Node.js 20+. From this directory:
 
     npm ci
