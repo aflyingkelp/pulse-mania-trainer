@@ -14,7 +14,7 @@ export async function importDan(pack,env){
  let cached=await env.BUCKET.get(key(pack.id));if(cached)return{...await cached.json(),cached:true};
  if(running.has(pack.id))return running.get(pack.id);
  let task=(async()=>{
-  let end=pack.start+pack.compressed-1,response=await fetch(DAN_SOURCE,{headers:{Range:`bytes=${pack.start}-${end}`},redirect:'error',signal:AbortSignal.timeout(300000)});
+  let end=pack.start+pack.compressed-1,response=await fetch(DAN_SOURCE,{headers:{Range:`bytes=${pack.start}-${end}`},redirect:'manual',signal:AbortSignal.timeout(300000)});
   if(response.status!==206||response.headers.get('content-range')!==`bytes ${pack.start}-${end}/1761460997`){await response.body?.cancel();throw Error('Dan archive server did not return the requested pack range.')}
   let charts=[],assets={},pending=[],received=0,expanded=0,crc=0xffffffff,fileCount=0,active=0,failure=null;
   let unzip=new Unzip(file=>{
