@@ -12,7 +12,7 @@ globalThis.fetch=async(url,options)=>{calls++;assert.equal(options.redirect,'man
 try{
  let result=await importDan(pack,env);assert.equal(result.charts.length,1);assert.equal(Object.keys(result.assets).length,1);assert.ok(await env.BUCKET.get('dans/charts/'+result.charts[0].id+'.json'));
  console.log('PASS nested range extraction stores only charts and playable media');
- let cached=await importDan(pack,env);assert.equal(cached.cached,true);assert.equal(calls,1);
+ let streamed=await danAPI(new Request('https://test/api/dans/zeta-v1/install',{method:'POST'}),env);assert.equal((await streamed.json()).cached,true);let cached=await importDan(pack,env);assert.equal(cached.cached,true);assert.equal(calls,1);
  let chart=await (await danAPI(new Request('https://test/api/dans/zeta-v1/charts/'+result.charts[0].id),env)).json();assert.ok(chart.audioId.startsWith('/api/assets/'));assert.equal(chart.keys,4);assert.equal(chart.notes.length,1);
  let catalog=await (await danAPI(new Request('https://test/api/dans'),env)).json();assert.equal(catalog.packs.length,26);assert.equal(catalog.packs.find(p=>p.id==='zeta-v1').chartCount,1);assert.equal(catalog.packs.find(p=>p.id==='zeta-v1').charts[0].notes,1);
  console.log('PASS server cache and catalog expose metadata without loading every chart');

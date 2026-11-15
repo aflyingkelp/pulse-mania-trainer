@@ -4,6 +4,14 @@ import {DAN_SOURCE,DAN_PACKS} from './dan-catalog.mjs';
 import {allowedAppOrigin} from './cors.mjs';
 const running=new Map(),key=p=>'dans/packs/'+p+'.json';
 const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json','cache-control':'no-store'}});
+function streamImport(pack,env){
+ let active=true,timer,encoder=new TextEncoder();
+ return new Response(new ReadableStream({start(controller){
+  controller.enqueue(encoder.encode(' '.repeat(8192)+'\n'));
+  timer=setInterval(()=>{if(active)controller.enqueue(encoder.encode(' '.repeat(1024)+'\n'))},5000);
+  (async()=>{try{let d=await importDan(pack,env);if(active)controller.enqueue(encoder.encode(JSON.stringify({id:d.id,name:d.name,category:d.category,charts:d.charts,cached:!!d.cached})))}catch(e){if(active)controller.enqueue(encoder.encode(JSON.stringify({error:e.message})))}finally{clearInterval(timer);if(active){active=false;controller.close()}}})();
+ },cancel(){active=false;clearInterval(timer)}}),{headers:{'content-type':'application/json','cache-control':'no-store','x-accel-buffering':'no'}});
+}
 const hash=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
 const pathKey=p=>p.replaceAll('\\','/').replace(/^\.\//,'').toLowerCase();
 const mime=p=>/\.mp3$/i.test(p)?'audio/mpeg':/\.ogg$/i.test(p)?'audio/ogg':/\.wav$/i.test(p)?'audio/wav':/\.png$/i.test(p)?'image/png':/\.webp$/i.test(p)?'image/webp':/\.jpe?g$/i.test(p)?'image/jpeg':'application/octet-stream';
@@ -52,7 +60,7 @@ export async function danAPI(request,env){
  try{
   if(!match[1]&&request.method==='GET'){let packs=[];for(let i=0;i<DAN_PACKS.length;i+=6)await Promise.all(DAN_PACKS.slice(i,i+6).map(async p=>{let stored=await env.BUCKET.get(key(p.id)),d=stored?await stored.json():null;packs.push({...p,installed:!!d,chartCount:d?.charts.length||0,charts:d?.charts||[]})}));return json({packs:packs.sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true})),source:'https://www.danreform.com/',total:DAN_PACKS.length})}
   let pack=DAN_PACKS.find(p=>p.id===match[1]);if(!pack)return json({error:'Unknown Dan pack.'},404);
-  if(match[2]==='install'&&request.method==='POST'){if(!allowedAppOrigin(request.headers.get('origin'),url.origin))return json({error:'Origin not allowed.'},403);let d=await importDan(pack,env);return json({id:d.id,name:d.name,category:d.category,charts:d.charts,cached:!!d.cached})}
+  if(match[2]==='install'&&request.method==='POST'){if(!allowedAppOrigin(request.headers.get('origin'),url.origin))return json({error:'Origin not allowed.'},403);return streamImport(pack,env)}
   if(match[2]==='charts'&&match[3]&&request.method==='GET'){let obj=await env.BUCKET.get(key(pack.id));if(!obj)return json({error:'This Dan pack is not installed yet.'},404);let d=await obj.json(),entry=d.charts.find(c=>c.id===match[3]);if(!entry)return json({error:'Chart not found in this pack.'},404);let chart=await (await env.BUCKET.get('dans/charts/'+entry.id+'.json')).json();const asset=name=>!name?null:d.assets[pathKey(entry.dir+name)]||d.assets[pathKey(name)]||Object.entries(d.assets).find(([p])=>p.endsWith('/'+pathKey(name)))?.[1]||null;return json({...chart,audioId:asset(chart.audioName),backgroundId:asset(chart.backgroundName)})}
   return json({error:'Unsupported Dan request.'},405);
  }catch(e){console.error('Dan import:',e.message);return json({error:e.message},502)}

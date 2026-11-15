@@ -3,7 +3,7 @@ const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,
 const time=t=>Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');
 export function mountDans(callbacks){
  let packs=[],selected=null,loaded=false,busy=new Set(),loadToken=0;
- async function request(path,options={}){let r=await requestRetry(path,{attempts:1,timeout:300000,...options}),d=await r.json();if(!r.ok)throw Error(d.error||'Dan request failed.');return d}
+ async function request(path,options={}){let r=await requestRetry(path,{attempts:1,timeout:300000,...options}),d=await r.json();if(!r.ok||d.error)throw Error(d.error||'Dan request failed.');return d}
  function render(){let q=$('danSearch').value.trim().toLowerCase(),category=$('danCategory').value,list=packs.filter(p=>(category==='all'||p.category===category)&&(!q||(p.name+' '+p.charts.map(c=>c.version+' '+c.title).join(' ')).toLowerCase().includes(q)));
   $('danSummary').textContent=packs.filter(p=>p.installed).length+' / '+packs.length+' packs on server · '+packs.reduce((n,p)=>n+p.chartCount,0)+' charts · chart data loads only when selected';
   $('danPacks').innerHTML=list.map(p=>`<button class="dan-pack ${selected===p.id?'selected':''}" data-dan-pack="${p.id}"><span class="eyebrow">${esc(p.category)}</span><b>${esc(p.name)}</b><small>${p.installed?p.chartCount+' charts · ready on server':busy.has(p.id)?'Installing on server…':'Not installed yet'}</small></button>`).join('');
