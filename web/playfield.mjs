@@ -10,3 +10,5 @@ export function migratePlayfield(settings){
  if((settings.version||0)<6&&(!settings.laneWidth||settings.laneWidth<100))settings.laneWidth=128;
  settings.laneWidth=Math.max(40,Math.min(180,Number(settings.laneWidth)||128));settings.version=6;return settings;
 }
+
+export function adaptiveFieldWidth(keys,columnWidth,skinWidth,available,mode='adaptive'){if(mode==='full')return Math.max(1,available);if(mode==='fixed')return fieldWidth(keys,columnWidth,skinWidth,available);let target=keys*columnWidth*available/1024;if(available<600)target=Math.max(target,available*.94);return Math.max(1,Math.min(Math.max(target,skinWidth||0),available*(available<600?1:.9)))}
